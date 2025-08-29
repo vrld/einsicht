@@ -25,6 +25,7 @@ type Model struct {
 	width, height  int
 	KeyMap         KeyMap
 	Email          *internal.Email
+	OpenCommand    string
 	viewportBody   viewport.Model
 	viewportHeader viewport.Model
 	inputMode      int
@@ -41,6 +42,7 @@ func InitialModel(email *internal.Email) Model {
 			SetDefaultMode:   key.NewBinding(key.WithKeys("escape", "q")),
 		},
 		Email:     email,
+		OpenCommand: "xdg-open",  // TODO: configurale
 		inputMode: uiModeReadBody,
 	}
 

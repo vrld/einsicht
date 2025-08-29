@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"os"
-	"strings"
 
-	"github.com/rymdport/portal/filechooser"
 	"github.com/spf13/cobra"
 	"github.com/vrld/einsicht/internal"
 )
@@ -21,7 +19,10 @@ var saveTextCmd = &cobra.Command{
 	Short:   "Save text/plain to file",
 	Aliases: []string{"t", "p"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return savePart([]byte(theEmail.Text), "Save text body", theEmail.Subject+".txt")
+		return internal.SaveToFileWithDialog("Save text body", theEmail.Subject+".txt", func(f *os.File) error {
+			_, err := f.WriteString(theEmail.Text)
+			return err
+		})
 	},
 }
 
@@ -34,7 +35,10 @@ var saveHtmlCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return savePart([]byte(html), "Save html body", theEmail.Subject+".html")
+		return internal.SaveToFileWithDialog("Save html body", theEmail.Subject+".html", func(f *os.File) error {
+			_, err := f.WriteString(html)
+			return err
+		})
 	},
 }
 
@@ -53,29 +57,14 @@ Arguments:
 			return err
 		}
 
-		return savePart(attachment.Content, "Save attachment", attachment.Filename)
+		return internal.SaveToFileWithDialog("Save attachment", attachment.Filename, func(f *os.File) error {
+			_, err := f.Write(attachment.Content)
+			return err
+		})
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(saveCmd)
 	saveCmd.AddCommand(saveTextCmd, saveHtmlCmd, saveAttachmentCmd)
-}
-
-func savePart(content []byte, title, suggestedFilename string) error {
-	options := filechooser.SaveFileOptions{CurrentName: suggestedFilename}
-	files, err := filechooser.SaveFile("einsicht", title, &options)
-	if err != nil {
-		return err
-	}
-
-	for _, filename := range files {
-		filename := strings.TrimPrefix(filename, "file://")
-		if err = os.WriteFile(filename, content, os.ModePerm); err != nil {
-			return err
-		}
-	}
-
-	return nil
-
 }

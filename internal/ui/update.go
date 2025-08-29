@@ -2,10 +2,12 @@ package ui
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	zone "github.com/lrstanley/bubblezone"
+	"github.com/vrld/einsicht/internal"
 )
 
 func (m Model) Init() tea.Cmd {
@@ -18,16 +20,53 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		panic(msg)
 
 	case OpenHTMLMsg:
-		// TODO
-
-	case SaveAttachmentMsg:
-		// TODO
+		html, err := internal.GetCleanedHTML(m.Email)
+		if err != nil {
+			return m, send(err)
+		}
+		err = internal.OpenStringWithCommand(m.OpenCommand, "html", func(file *os.File) error {
+			_, err := file.WriteString(html)
+			return err
+		})
+		if err != nil {
+			return m, send(err)
+		}
 
 	case OpenAttachmentMsg:
-		// TODO
+		if msg.Index < 0 || msg.Index >= len(m.Email.Attachments) {
+			return m, send(fmt.Errorf("Index out of bounds [0, %d]", len(m.Email.Attachments)))
+		}
+		attachment := m.Email.Attachments[msg.Index]
+		err := internal.OpenStringWithCommand(m.OpenCommand, "html", func(file *os.File) error {
+			_, err := file.Write(attachment.Content)
+			return err
+		})
+		if err != nil {
+			return m, send(err)
+		}
 
 	case SaveBodyMsg:
-		// TODO
+		suggestedFilename := fmt.Sprintf("%s.txt", m.Email.Subject)
+		err := internal.SaveToFileWithDialog("Save text body", suggestedFilename, func(file *os.File) error {
+			_, err := file.WriteString(m.Email.Text)
+			return err
+		})
+		if err != nil {
+			return m, send(err)
+		}
+
+	case SaveAttachmentMsg:
+		if msg.Index < 0 || msg.Index >= len(m.Email.Attachments) {
+			return m, send(fmt.Errorf("Index out of bounds [0, %d]", len(m.Email.Attachments)))
+		}
+		attachment := m.Email.Attachments[msg.Index]
+		err := internal.SaveToFileWithDialog("Save attachment", attachment.Filename, func(file *os.File) error {
+			_, err := file.Write(attachment.Content)
+			return err
+		})
+		if err != nil {
+			return m, send(err)
+		}
 
 	case tea.WindowSizeMsg:
 		m.setDimensions(msg.Width, msg.Height)
