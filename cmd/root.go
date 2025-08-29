@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/vrld/einsicht/internal"
+	"github.com/vrld/einsicht/internal/ui"
 	"golang.org/x/term"
 )
 
@@ -19,8 +19,8 @@ var rootCmd = &cobra.Command{
 	Short:             "The mail reader and multitool",
 	Long:              "Read your mail with style; process it with ease",
 	PersistentPreRunE: loadEmailFromFlags,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("TODO: implement TUI with bubbletea")
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return ui.Run(theEmail)
 	},
 }
 

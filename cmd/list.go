@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/vrld/einsicht/internal"
 )
 
 var asJson bool  // TODO: implement this
@@ -31,10 +32,10 @@ var listBodiesCmd = &cobra.Command{
 	Aliases: []string{"b"},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(theEmail.Text) > 0 {
-			fmt.Println("- text/plain", len(theEmail.Text), "byte")
+			fmt.Println("- text/plain ", internal.HumanReadableFileSize(len(theEmail.Text)))
 		}
 		if len(theEmail.HTML) > 0 {
-			fmt.Println("- text/html,", len(theEmail.HTML), "byte")
+			fmt.Println("- text/html ", internal.HumanReadableFileSize(len(theEmail.HTML)))
 		}
 	},
 }
@@ -51,7 +52,7 @@ var listAttachmentsCmd = &cobra.Command{
 
 		fmt.Println("- Attachments:")
 		for i, a := range theEmail.Attachments {
-			fmt.Printf("  %d. %s (%s) %d byte\n", i+1, a.Filename, a.ContentType, len(a.Content))
+			fmt.Printf("  %d. %s (%s) %s\n", i+1, a.Filename, a.ContentType, internal.HumanReadableFileSize(len(a.Content)))
 		}
 	},
 }

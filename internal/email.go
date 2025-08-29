@@ -169,7 +169,7 @@ func (email *Email) HeaderDisplayAdditional() []HeaderDisplay {
 			"To",
 			"Cc",
 			"Subject":
-			// skip header
+			// skip
 
 		default:
 			selectedHeaders = append(selectedHeaders, header)

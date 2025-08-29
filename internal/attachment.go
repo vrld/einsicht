@@ -39,3 +39,13 @@ func AttachmentFromArg(arg string, attachments []*Attachment) (*Attachment, erro
 
 	return attachments[index-1], nil
 }
+
+func HumanReadableFileSize(size int) string {
+	if size > 1024 * 1024 {
+		return fmt.Sprintf("%.2f MB", float64(size) / 1024. / 1024.)
+	} else if size > 1024 {
+		return fmt.Sprintf("%.2f KB", float64(size) / 1024.)
+	} else {
+		return fmt.Sprintf("%d B", size)
+	}
+}
