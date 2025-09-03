@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/spf13/viper"
 	"github.com/vrld/einsicht/internal"
 )
 
@@ -42,7 +43,7 @@ func InitialModel(email *internal.Email) Model {
 			SetDefaultMode:   key.NewBinding(key.WithKeys("escape", "q")),
 		},
 		Email:     email,
-		OpenCommand: "xdg-open",  // TODO: configurale
+		OpenCommand: viper.GetString("command"),
 		inputMode: uiModeReadBody,
 	}
 

@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/vrld/einsicht/internal"
 	"github.com/vrld/einsicht/internal/ui"
 	"golang.org/x/term"
@@ -18,7 +20,15 @@ var rootCmd = &cobra.Command{
 	Use:               "einsicht",
 	Short:             "The mail reader and multitool",
 	Long:              "Read your mail with style; process it with ease",
-	PersistentPreRunE: loadEmailFromFlags,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		viper.SetEnvPrefix("EINSICHT")
+		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "*", "-", "*"))
+		viper.AutomaticEnv()
+		if err := viper.BindPFlags(cmd.Flags()); err != nil {
+			return err
+		}
+		return loadEmailFromFlags(cmd)
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return ui.Run(theEmail)
 	},
@@ -33,9 +43,10 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringP("file", "f", "-", "read email from `PATH`; `-` means stdin")
+	rootCmd.Flags().StringP("command", "c", "xdg-open", "Open files with this command")
 }
 
-func loadEmailFromFlags(cmd *cobra.Command, args []string) error {
+func loadEmailFromFlags(cmd *cobra.Command) error {
 	emailPath := cmd.Flag("file").Value.String()
 	if emailPath == "-" {
 		if !term.IsTerminal(int(os.Stdin.Fd())) {
