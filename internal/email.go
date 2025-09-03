@@ -2,6 +2,7 @@ package internal
 
 import (
 	"io"
+	"mime"
 	"net/textproto"
 	"slices"
 	"strings"
@@ -43,18 +44,18 @@ func ReadEmail(reader io.Reader) (*Email, error) {
 		return nil, err
 	}
 
-	email := Email{
-		From:       m.Header.Get("From"),
-		ReplyTo:    m.Header.Values("ReplyTo"),
-		To:         m.Header.Values("To"),
-		Cc:         m.Header.Values("Cc"),
-		Bcc:        m.Header.Values("Bcc"),
-		Subject:    m.Header.Get("Subject"),
-		Date:       m.Header.Get("Date"),
-		MIMEHeader: m.Header.Map(),
-	}
+	headers := decodeMIMEHeaders(m.Header.Map())
 
-	// TODO: decode encoded headers like "=?utf-8?B?UE8veEtiT3d4Mlg4ODNobVEzMG15ZCtPUE00U0t6MkNmT0F0MFU2Yjd1cmVP?="
+	email := Email{
+		From:       getSingleValueFromHeaders(headers, "From"),
+		ReplyTo:    headers.Values("ReplyTo"),
+		To:         headers.Values("To"),
+		Cc:         headers.Values("Cc"),
+		Bcc:        headers.Values("Bcc"),
+		Subject:    getSingleValueFromHeaders(headers, "Subject"),
+		Date:       getSingleValueFromHeaders(headers, "Date"),
+		MIMEHeader: headers,
+	}
 
 	err = readParts(m, &email)
 	return &email, err
@@ -189,4 +190,29 @@ func (email *Email) HeaderDisplayAdditional() []HeaderDisplay {
 
 func (email *Email) HeaderDisplayAll() []HeaderDisplay {
 	return append(email.HeaderDisplayCanonical(), email.HeaderDisplayAdditional()...)
+}
+
+func decodeMIMEHeaders(rawHeaders textproto.MIMEHeader) textproto.MIMEHeader {
+	decoder := &mime.WordDecoder{}
+	decoded := make(textproto.MIMEHeader)
+
+	for key, values := range rawHeaders {
+		decodedValues := make([]string, len(values))
+		for i, value := range values {
+			if decodedValue, err := decoder.DecodeHeader(value); err == nil {
+				decodedValues[i] = decodedValue
+			} else {
+				decodedValues[i] = value
+			}
+		}
+		decoded[key] = decodedValues
+	}
+	return decoded
+}
+
+func getSingleValueFromHeaders(headers textproto.MIMEHeader, key string) string {
+	if values := headers.Values(key); len(values) > 0 {
+		return values[0]
+	}
+	return ""
 }
