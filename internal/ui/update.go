@@ -19,6 +19,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case error:
 		panic(msg)
 
+	case CycleBodyType:
+		switch m.bodyToDisplay {
+		case "html":
+			if len(m.Email.Text) > 0 {
+				m.bodyToDisplay = "plain"
+			}
+
+		default:
+			if len(m.Email.HTML) > 0 {
+				m.bodyToDisplay = "html"
+			}
+		}
+		m.updateBodyViewport()
+
 	case OpenHTMLMsg:
 		html, err := internal.GetCleanedHTML(m.Email)
 		if err != nil {
@@ -87,7 +101,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
 			switch m.inputMode {
 			case uiModeReadBody:
-				if zone.Get("openHtml").InBounds(msg) {
+				if zone.Get("cycleBody").InBounds(msg) {
+					return m, send(CycleBodyType{})
+				} else if zone.Get("openHtml").InBounds(msg) {
 					return m, send(OpenHTMLMsg{})
 				} else if zone.Get("attach").InBounds(msg) && len(m.Email.Attachments) > 0 {
 					m.setInputState(uiModeSelectAttachment)
@@ -123,6 +139,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) handleReadBodyKeys(msg tea.KeyMsg) tea.Cmd {
 	switch {
+	case key.Matches(msg, m.KeyMap.CycleBodyType):
+		return send(CycleBodyType{})
+
 	case key.Matches(msg, m.KeyMap.OpenHTML):
 		return send(OpenHTMLMsg{})
 
@@ -149,7 +168,7 @@ func (m *Model) handleReadBodyKeys(msg tea.KeyMsg) tea.Cmd {
 }
 
 func (m *Model) handleInspectHeaderKeys(msg tea.KeyMsg) (cmd tea.Cmd) {
-	if key.Matches(msg, m.KeyMap.SetDefaultMode, m.KeyMap.InspectHeaders)  {
+	if key.Matches(msg, m.KeyMap.SetDefaultMode, m.KeyMap.InspectHeaders) {
 		m.setInputState(uiModeReadBody)
 		return nil
 	}
@@ -172,7 +191,6 @@ func (m *Model) handleSelectAttachmentKeys(msg tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
-
 func runeToAttachmentIndex(msg tea.KeyMsg) int {
 	if len(msg.Runes) == 0 {
 		return -1
@@ -192,9 +210,10 @@ func runeToAttachmentIndex(msg tea.KeyMsg) int {
 	return -1
 }
 
+type CycleBodyType struct{}
 type OpenHTMLMsg struct{}
-type SaveAttachmentMsg struct{Index int}
-type OpenAttachmentMsg struct{Index int}
+type SaveAttachmentMsg struct{ Index int }
+type OpenAttachmentMsg struct{ Index int }
 type SaveBodyMsg struct{}
 
 func send(value tea.Msg) tea.Cmd {

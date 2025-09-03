@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	zone "github.com/lrstanley/bubblezone"
 
 	"github.com/vrld/einsicht/internal"
@@ -15,7 +16,7 @@ const (
 	borderColorSelected = lipgloss.Color("4")
 )
 
-const viewportHeaderHeight = 10
+const viewportHeaderHeight = 13
 
 var (
 	styleHeaderKey   = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
@@ -46,12 +47,17 @@ func (m Model) View() string {
 	cardBody := m.renderBody()
 
 	// NOTE: cardAttachments already includes the \n if there are attachments
-	return zone.Scan(fmt.Sprint(cardHeaders, "\n", cardBody, "\n", cardAttachments, bottom))
+	return zone.Scan(fmt.Sprint(cardHeaders, cardBody, cardAttachments, bottom))
 }
 
 func (m *Model) renderHeightHeaders() int {
+	if m.height <= 1 {
+		// initialization
+		return 2
+	}
+
 	if m.inputMode == uiModeInspectHeader {
-		return viewportHeaderHeight + 2
+		return min(viewportHeaderHeight, m.viewportHeader.TotalLineCount()) + 2
 	}
 	return len(m.Email.HeaderDisplayCanonical()) + 2
 }
@@ -63,7 +69,7 @@ func (m *Model) renderHeaders() string {
 	if m.inputMode == uiModeInspectHeader {
 		headerList = m.viewportHeader.View()
 	} else {
-		headerList = renderHeadersForDisplay(m.Email.HeaderDisplayCanonical(), m.width-2)
+		headerList = renderHeadersForDisplay(m.Email.HeaderDisplayCanonical(), m.width-4, false)
 	}
 
 	style := lipgloss.NewStyle().
@@ -76,28 +82,33 @@ func (m *Model) renderHeaders() string {
 		renderTopLineWithTitle("header", m.width, color),
 		"\n",
 		style.Render(headerList),
+		"\n",
 	)
 }
 
-func renderHeadersForDisplay(headers []internal.HeaderDisplay, width int) string {
-	const padding = 2
+func renderHeadersForDisplay(headers []internal.HeaderDisplay, width int, wrap bool) string {
+	headerTable := table.New().
+		Width(width).
+		Wrap(wrap).
+		BorderTop(false).BorderHeader(false).BorderBottom(false).
+		BorderLeft(false).BorderColumn(false).BorderRight(false)
 
-	headerDisplayWidth := 0
+	maxHeaderKeyLength := 0
 	for _, h := range headers {
-		headerDisplayWidth = max(headerDisplayWidth, len(h.Key))
+		maxHeaderKeyLength = max(maxHeaderKeyLength, len(h.Key))
+		headerTable.Row(h.Key, h.Value)
 	}
+	headerTable.Row("", "")
 
-	valueDisplayWidth := width - headerDisplayWidth - padding
+	styleHeaderKey := styleHeaderKey.Width(maxHeaderKeyLength + 1)
+	headerTable = headerTable.StyleFunc(func(row, col int) lipgloss.Style {
+		if col == 0 {
+			return styleHeaderKey
+		}
+		return styleHeaderValue
+	})
 
-	lines := []string{}
-	for _, header := range headers {
-		lines = append(lines, fmt.Sprint(
-			styleHeaderKey.Width(headerDisplayWidth + padding).Render(header.Key+":"),
-			styleHeaderValue.Width(valueDisplayWidth).Render(header.Value),
-		))
-	}
-
-	return strings.Join(lines, "\n")
+	return headerTable.String()
 }
 
 func (m *Model) renderHeightAttachments() int {
@@ -219,9 +230,14 @@ func (m *Model) renderBody() string {
 		Width(m.width - 2)
 
 	return fmt.Sprint(
-		renderTopLineWithTitle("body", m.width, lipgloss.Color(color)),
+		renderTopLineWithTitle(
+			zone.Mark("cycleBody", fmt.Sprint("body: ", m.bodyToDisplay)),
+			m.width,
+			lipgloss.Color(color),
+		),
 		"\n",
 		style.Height(m.viewportBody.Height-1).Render(m.viewportBody.View()),
+		"\n",
 	)
 }
 

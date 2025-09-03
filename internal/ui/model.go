@@ -1,11 +1,13 @@
 package ui
 
 import (
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/k3a/html2text"
 	"github.com/spf13/viper"
+
 	"github.com/vrld/einsicht/internal"
 )
 
@@ -16,6 +18,7 @@ type KeyMap struct {
 	Save             key.Binding
 	Quit             key.Binding
 	SetDefaultMode   key.Binding
+	CycleBodyType    key.Binding
 }
 
 const (
@@ -32,6 +35,7 @@ type Model struct {
 	viewportBody   viewport.Model
 	viewportHeader viewport.Model
 	inputMode      int
+	bodyToDisplay  string
 }
 
 func InitialModel(email *internal.Email) Model {
@@ -43,17 +47,17 @@ func InitialModel(email *internal.Email) Model {
 			Save:             key.NewBinding(key.WithKeys("s")),
 			Quit:             key.NewBinding(key.WithKeys("q", "ctrl+c")),
 			SetDefaultMode:   key.NewBinding(key.WithKeys("escape", "q")),
+			CycleBodyType:    key.NewBinding(key.WithKeys("tab", "b")),
 		},
-		Email:     email,
-		OpenCommand: viper.GetString("command"),
-		inputMode: uiModeReadBody,
+		Email:         email,
+		OpenCommand:   viper.GetString("command"),
+		inputMode:     uiModeReadBody,
+		bodyToDisplay: viper.GetString("body"),
 	}
 
 	model.viewportHeader = viewport.New(1, 1)
-	model.viewportHeader.Height = viewportHeaderHeight
 	model.viewportBody = viewport.New(1, 1)
 	model.setDimensions(1, 1)
-	model.updateBodyViewport()
 
 	return model
 }
@@ -64,10 +68,11 @@ func (m *Model) setDimensions(width, height int) {
 
 	m.viewportHeader.Width = width - 2
 	m.viewportHeader.SetContent(
-		renderHeadersForDisplay(m.Email.HeaderDisplayAll(), m.viewportHeader.Width),
+		renderHeadersForDisplay(m.Email.HeaderDisplayAll(), m.width-4, true),
 	)
-	m.viewportBody.Width = width - 2
-	m.viewportBody.Height = m.computeViewportBodyHeight()
+	m.viewportHeader.Height = min(viewportHeaderHeight, m.viewportHeader.TotalLineCount())
+
+	m.updateBodyViewport()
 }
 
 func (m *Model) setInputState(state int) {
@@ -76,10 +81,11 @@ func (m *Model) setInputState(state int) {
 }
 
 func (m *Model) updateBodyViewport() {
+	m.viewportBody.Width = m.width - 2
 	m.viewportBody.Height = m.computeViewportBodyHeight()
 
 	content := ""
-	switch viper.GetString("body") {
+	switch m.bodyToDisplay {
 	case "plain":
 		content = m.Email.Text
 	case "html":
