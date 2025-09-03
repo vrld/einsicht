@@ -3,6 +3,8 @@ package ui
 import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/k3a/html2text"
 	"github.com/spf13/viper"
 	"github.com/vrld/einsicht/internal"
 )
@@ -51,7 +53,7 @@ func InitialModel(email *internal.Email) Model {
 	model.viewportHeader.Height = viewportHeaderHeight
 	model.viewportBody = viewport.New(1, 1)
 	model.setDimensions(1, 1)
-	model.UpdateEmailDisplay()
+	model.updateBodyViewport()
 
 	return model
 }
@@ -73,7 +75,17 @@ func (m *Model) setInputState(state int) {
 	m.viewportBody.Height = m.computeViewportBodyHeight()
 }
 
-func (m *Model) UpdateEmailDisplay() {
-	m.viewportBody.SetContent(string(m.Email.Text))
+func (m *Model) updateBodyViewport() {
 	m.viewportBody.Height = m.computeViewportBodyHeight()
+
+	content := ""
+	switch viper.GetString("body") {
+	case "plain":
+		content = m.Email.Text
+	case "html":
+		content = html2text.HTML2Text(m.Email.HTML)
+	}
+
+	limitWidth := lipgloss.NewStyle().Width(m.viewportBody.Width - 2)
+	m.viewportBody.SetContent(limitWidth.Render(content))
 }

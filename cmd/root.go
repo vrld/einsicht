@@ -43,6 +43,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringP("file", "f", "-", "read email from `PATH`; `-` means stdin")
+	rootCmd.Flags().StringP("body", "b", "plain", "Preferred body to display: plain or html")
 	rootCmd.Flags().StringP("command", "c", "xdg-open", "Open files with this command")
 }
 
