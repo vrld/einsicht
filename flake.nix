@@ -20,7 +20,8 @@
           pname = "einsicht";
           version = "0.0.0.2";
           src = ./.;
-          vendorHash = null;
+          # vendorHash = pkgs.lib.fakeHash;
+          vendorHash = "sha256-T1X/od0lEN/7tfG+mNSVQ8KUZwFIMgXq5U7d0fI4nO0=";
 
           meta = {
             license = pkgs.lib.licenses.mit;
