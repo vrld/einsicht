@@ -19,7 +19,7 @@ var theEmail *internal.Email
 var rootCmd = &cobra.Command{
 	Use:               "einsicht",
 	Short:             "The mail reader and multitool",
-	Long:              "Read your mail with style; process it with ease",
+	Long:              "The mail reader and multitool",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		viper.SetEnvPrefix("EINSICHT")
 		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "*", "-", "*"))

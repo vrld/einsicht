@@ -4,6 +4,8 @@ Einsicht is a simple tool to view a single mail file. It displays plain text
 and opens sanitized html mails in your browser. It previews and saves
 attachments. Use it as a TUI or call it from scripts.
 
+![A demo showing how to view and edit a saved file](demo.gif)
+
 ## TUI
 
 Open the tui with `einsicht`. The mail file is read from stdin:
@@ -14,6 +16,11 @@ You can also specify the path with `--file`, `-f`:
 
     einsicht -f /path/to/mail.eml
 
+Prefer html display over plain text?
+
+    einsicht -f /path/to/mail.eml -b html
+
+See `einsicht --help` for more.
 
 ## CLI
 
