@@ -1,3 +1,5 @@
+# ⚠️ Superseded by [Übersicht](https://tangled.org/vrld.tngl.sh/ubersicht) ⚠️ 
+
 # Einsicht, the mail viewer
 
 Einsicht is a simple tool to view a single mail file. It displays plain text
